@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Script Videos - History</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #0a0e14;
+            color: #c5cdd8;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 6px;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #6b7a8d;
+            margin-bottom: 32px;
+        }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .video-card {
+            background: #0d1117;
+            border: 1px solid #1e2a3a;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .video-card:hover { border-color: #2a3a4a; }
+        .video-card video {
+            width: 100%;
+            display: block;
+            background: #000;
+        }
+        .video-card .info {
+            padding: 14px 16px;
+        }
+        .video-card .filename {
+            font-size: 13px;
+            font-weight: 600;
+            color: #c5cdd8;
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+        .video-card .meta {
+            font-size: 11px;
+            color: #4a5a6c;
+            margin-bottom: 12px;
+        }
+        .video-card .actions {
+            display: flex;
+            gap: 8px;
+        }
+        .video-card .actions a {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .btn-dl {
+            background: #1e3a2a;
+            color: #4caf50;
+            border: 1px solid #2a5a3a;
+        }
+        .btn-dl:hover { background: #2a5a3a; }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #3a4a5c;
+            font-size: 14px;
+        }
+        .nav-links {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid #1a2030;
+            font-size: 12px;
+            color: #3a4a5c;
+        }
+        .nav-links a {
+            color: #4fc3f7;
+            text-decoration: none;
+            margin-right: 16px;
+        }
+        .nav-links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Video History</h1>
+        <p class="subtitle">All previously generated script-to-avatar videos.</p>
+
+        <div id="videoGrid" class="video-grid"></div>
+        <div id="emptyState" class="empty-state" style="display:none;">No videos generated yet. <a href="/script" style="color:#4fc3f7;">Create one</a></div>
+
+        <div class="nav-links">
+            <a href="/script">Back to Script Tool</a>
+            <a href="/">Home</a>
+        </div>
+    </div>
+
+    <script>
+        async function loadVideos() {
+            try {
+                const res = await fetch('/script-video-list');
+                const data = await res.json();
+                const grid = document.getElementById('videoGrid');
+                const empty = document.getElementById('emptyState');
+
+                if (!data.videos || data.videos.length === 0) {
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                // Show newest first
+                data.videos.reverse();
+
+                for (const v of data.videos) {
+                    const card = document.createElement('div');
+                    card.className = 'video-card';
+                    const videoUrl = `/download-script-video/${v.filename}`;
+                    card.innerHTML = `
+                        <video controls preload="metadata" src="${videoUrl}"></video>
+                        <div class="info">
+                            <div class="filename">${v.filename}</div>
+                            <div class="meta">${v.size_mb} MB &middot; ${v.created}</div>
+                            <div class="actions">
+                                <a class="btn-dl" href="${videoUrl}" download>Download</a>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                }
+            } catch (e) {
+                document.getElementById('emptyState').style.display = 'block';
+                document.getElementById('emptyState').textContent = 'Failed to load videos.';
+            }
+        }
+
+        loadVideos();
+    </script>
+</body>
+</html>

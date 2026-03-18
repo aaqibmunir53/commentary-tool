@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Script to Avatar Video</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #0a0e14;
+            color: #c5cdd8;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 700px;
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 6px;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #6b7a8d;
+            margin-bottom: 32px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #8a9bb0;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            background: #0d1117;
+            border: 1px solid #1e2a3a;
+            border-radius: 8px;
+            color: #c5cdd8;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.7;
+            padding: 16px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        textarea:focus { border-color: #4fc3f7; }
+        textarea::placeholder { color: #3a4a5c; }
+        .char-count {
+            text-align: right;
+            font-size: 11px;
+            color: #3a4a5c;
+            margin-top: 6px;
+            margin-bottom: 24px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            justify-content: center;
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4fc3f7 0%, #2196f3 100%);
+            color: #fff;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:disabled {
+            background: #1e2a3a;
+            color: #4a5568;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #1a2030;
+            color: #8a9bb0;
+            border: 1px solid #1e2a3a;
+            margin-top: 12px;
+        }
+        .btn-secondary:hover { background: #1e2a3a; color: #c5cdd8; }
+        .progress-section {
+            margin-top: 24px;
+        }
+        .progress-section.hidden { display: none; }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #1a2030;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4fc3f7, #2196f3);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+        .status-text {
+            font-size: 13px;
+            color: #6b7a8d;
+        }
+        .result-section {
+            margin-top: 28px;
+            padding: 20px;
+            background: #0d1117;
+            border: 1px solid #1e3a2a;
+            border-radius: 8px;
+        }
+        .result-section.hidden { display: none; }
+        .result-section .label {
+            font-size: 13px;
+            color: #4caf50;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .video-preview {
+            width: 100%;
+            border-radius: 6px;
+            background: #000;
+            margin-bottom: 16px;
+        }
+        .btn-download {
+            background: #1e3a2a;
+            color: #4caf50;
+            border: 1px solid #2a5a3a;
+        }
+        .btn-download:hover { background: #2a5a3a; }
+        .error-msg {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: #2a1a1a;
+            border: 1px solid #4a2a2a;
+            border-radius: 8px;
+            color: #f44336;
+            font-size: 13px;
+        }
+        .error-msg.hidden { display: none; }
+        .nav-links {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid #1a2030;
+            font-size: 12px;
+            color: #3a4a5c;
+        }
+        .nav-links a {
+            color: #4fc3f7;
+            text-decoration: none;
+            margin-right: 16px;
+        }
+        .nav-links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Script to Avatar Video</h1>
+        <p class="subtitle">Paste your script below and generate a single HeyGen avatar video.</p>
+
+        <label for="scriptInput">Your Script</label>
+        <textarea id="scriptInput" placeholder="Paste your full script here. Multiple paragraphs are fine — it will all be generated as one continuous video."></textarea>
+        <div class="char-count"><span id="charCount">0</span> characters</div>
+
+        <button class="btn btn-primary" id="generateBtn" onclick="generate()">Generate Avatar Video</button>
+
+        <div class="progress-section hidden" id="progressSection">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="status-text" id="statusText">Starting...</div>
+        </div>
+
+        <div class="error-msg hidden" id="errorMsg"></div>
+
+        <div class="result-section hidden" id="resultSection">
+            <div class="label">Video ready!</div>
+            <video id="videoPreview" class="video-preview" controls></video>
+            <a id="downloadLink" href="#" download>
+                <button class="btn btn-download">Download MP4</button>
+            </a>
+        </div>
+
+        <a href="/script-history" class="btn btn-secondary">View History</a>
+
+        <div class="nav-links">
+            <a href="/">Home</a>
+        </div>
+    </div>
+
+    <script>
+        const scriptInput = document.getElementById('scriptInput');
+        const charCount = document.getElementById('charCount');
+
+        scriptInput.addEventListener('input', () => {
+            charCount.textContent = scriptInput.value.length;
+        });
+
+        async function generate() {
+            const text = scriptInput.value.trim();
+            if (!text) return;
+
+            const btn = document.getElementById('generateBtn');
+            const progressSection = document.getElementById('progressSection');
+            const progressFill = document.getElementById('progressFill');
+            const statusText = document.getElementById('statusText');
+            const errorMsg = document.getElementById('errorMsg');
+            const resultSection = document.getElementById('resultSection');
+
+            // Reset UI
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+            progressSection.classList.remove('hidden');
+            progressFill.style.width = '5%';
+            statusText.textContent = 'Starting avatar generation...';
+            errorMsg.classList.add('hidden');
+            resultSection.classList.add('hidden');
+
+            try {
+                const form = new FormData();
+                form.append('script_text', text);
+
+                const res = await fetch('/generate-script-video', { method: 'POST', body: form });
+                const data = await res.json();
+
+                if (data.error) {
+                    errorMsg.textContent = data.error;
+                    errorMsg.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.textContent = 'Generate Avatar Video';
+                    progressSection.classList.add('hidden');
+                    return;
+                }
+
+                // Store job_id for /logs page
+                localStorage.setItem('active_job_id', data.job_id);
+
+                // Connect to SSE stream
+                const evtSource = new EventSource(`/stream/${data.job_id}`);
+                let msgCount = 0;
+
+                evtSource.onmessage = (e) => {
+                    const event = JSON.parse(e.data);
+
+                    if (event.type === 'progress') {
+                        msgCount++;
+                        const pct = Math.min(5 + Math.round(msgCount * 2), 90);
+                        progressFill.style.width = pct + '%';
+                        statusText.textContent = 'Generating avatar video...';
+                    } else if (event.type === 'done') {
+                        progressFill.style.width = '100%';
+                        statusText.textContent = 'Video generated successfully!';
+                        evtSource.close();
+                        btn.disabled = false;
+                        btn.textContent = 'Generate Again';
+
+                        if (event.video_path) {
+                            const filename = event.video_path.split('/').pop();
+                            const videoUrl = `/download-script-video/${filename}`;
+                            document.getElementById('videoPreview').src = videoUrl;
+                            document.getElementById('downloadLink').href = videoUrl;
+                            resultSection.classList.remove('hidden');
+                        }
+                    } else if (event.type === 'error') {
+                        progressFill.style.width = '0%';
+                        statusText.textContent = 'Generation failed.';
+                        errorMsg.textContent = event.message;
+                        errorMsg.classList.remove('hidden');
+                        evtSource.close();
+                        btn.disabled = false;
+                        btn.textContent = 'Retry';
+                    }
+                };
+
+                evtSource.onerror = () => {
+                    statusText.textContent = 'Connection lost.';
+                    evtSource.close();
+                    btn.disabled = false;
+                    btn.textContent = 'Retry';
+                };
+
+            } catch (err) {
+                errorMsg.textContent = 'Request failed: ' + err.message;
+                errorMsg.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = 'Generate Avatar Video';
+                progressSection.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+services:
+  commentary-tool:
+    build: .
+    ports:
+      - "8081:8080"
+    env_file:
+      - .env
+    volumes:
+      # Persist output files (videos, sessions, clips)
+      - ./output:/app/output
+      # HeyGen browser login state (copy .heygen_chrome_profile/ from Mac into ./heygen_profile/)
+      - ./heygen_profile:/app/.heygen_chrome_profile
+    restart: unless-stopped

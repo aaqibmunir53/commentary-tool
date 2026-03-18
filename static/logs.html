@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commentary Tool - Live Logs</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #0a0e14;
+            color: #c0c0c0;
+            font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #1a2030;
+        }
+        .header h1 {
+            font-size: 16px;
+            color: #4fc3f7;
+            font-weight: 600;
+        }
+        .status {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #1a2030;
+        }
+        .status.connected { color: #4caf50; border: 1px solid #2a4a2a; }
+        .status.disconnected { color: #888; border: 1px solid #333; }
+        .status.waiting { color: #ff9800; border: 1px solid #4a3a1a; }
+        .log-container {
+            background: #0d1117;
+            border: 1px solid #1a2030;
+            border-radius: 8px;
+            padding: 16px;
+            height: calc(100vh - 100px);
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .log-entry {
+            padding: 2px 0;
+            line-height: 1.5;
+        }
+        .log-entry.error { color: #f44336; }
+        .log-entry.done { color: #4caf50; }
+        .log-entry.info { color: #c0c0c0; }
+        .log-entry .timestamp {
+            color: #555;
+            margin-right: 8px;
+        }
+        .empty-state {
+            color: #555;
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Live Logs</h1>
+        <span class="status waiting" id="statusBadge">Waiting for job...</span>
+    </div>
+    <div class="log-container" id="logContainer">
+        <div class="empty-state" id="emptyState">No active job. Start a generation from the main UI.</div>
+    </div>
+
+    <script>
+        let evtSource = null;
+        let currentJobId = null;
+
+        function getTimestamp() {
+            const d = new Date();
+            return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:${d.getSeconds().toString().padStart(2,'0')}`;
+        }
+
+        function addLog(message, type = 'info') {
+            const container = document.getElementById('logContainer');
+            const empty = document.getElementById('emptyState');
+            if (empty) empty.remove();
+
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `<span class="timestamp">[${getTimestamp()}]</span>${message}`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function connectToJob(jobId) {
+            if (evtSource) evtSource.close();
+            currentJobId = jobId;
+
+            const badge = document.getElementById('statusBadge');
+            badge.textContent = 'Connected';
+            badge.className = 'status connected';
+
+            addLog(`Connected to job: ${jobId}`, 'info');
+
+            evtSource = new EventSource(`/stream/${jobId}`);
+            evtSource.onmessage = (e) => {
+                const event = JSON.parse(e.data);
+                if (event.type === 'progress') {
+                    addLog(event.message, 'info');
+                } else if (event.type === 'done') {
+                    addLog('Job completed successfully!', 'done');
+                    badge.textContent = 'Completed';
+                    badge.className = 'status connected';
+                    evtSource.close();
+                } else if (event.type === 'error') {
+                    addLog(`ERROR: ${event.message}`, 'error');
+                    badge.textContent = 'Error';
+                    badge.className = 'status disconnected';
+                    evtSource.close();
+                } else if (event.type === 'segment_complete') {
+                    const s = event;
+                    addLog(`Segment ${s.segment_id}: ${s.success ? 'OK' : 'FAILED'} (${s.successful}/${s.total})`, s.success ? 'info' : 'error');
+                }
+            };
+            evtSource.onerror = () => {
+                badge.textContent = 'Disconnected';
+                badge.className = 'status disconnected';
+            };
+        }
+
+        // Poll for active jobs
+        async function pollJobs() {
+            try {
+                const res = await fetch('/active-jobs');
+                const data = await res.json();
+                if (data.job_ids && data.job_ids.length > 0) {
+                    const latestJob = data.job_ids[data.job_ids.length - 1];
+                    if (latestJob !== currentJobId) {
+                        connectToJob(latestJob);
+                    }
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        // Check URL param first, then localStorage, then poll
+        const params = new URLSearchParams(window.location.search);
+        const jobParam = params.get('job_id');
+        if (jobParam) {
+            connectToJob(jobParam);
+        } else {
+            const stored = localStorage.getItem('active_job_id');
+            if (stored) connectToJob(stored);
+        }
+
+        // Keep polling for new jobs
+        setInterval(pollJobs, 3000);
+    </script>
+</body>
+</html>

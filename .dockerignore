@@ -1,0 +1,9 @@
+__pycache__
+*.pyc
+.env
+output/
+.heygen_chrome_profile/
+.heygen_browser_state/
+test_download.py
+*.mp4
+*.mp3
